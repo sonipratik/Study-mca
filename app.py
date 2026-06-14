@@ -1,10 +1,26 @@
-"""MCA Insight Pro - Main Application"""
+"""MCA Insight Pro - Single File Version (Reliable on Streamlit Cloud)"""
 import streamlit as st
-from pathlib import Path
+import pandas as pd
 import sys
+from pathlib import Path
+import logging
 
-# Add project root to sys.path (only needed once)
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Add project root to path
 sys.path.insert(0, str(Path(__file__).parent))
+
+from utils.data_loader import load_mca_data, get_data_summary, preprocess_data
+from utils.insights import generate_dataset_insights
+from components.ui_components import render_header, render_kpi_card, format_number, render_metric_row
+from components.charts import (
+    create_state_distribution_chart,
+    create_industry_distribution_chart,
+    create_status_distribution_chart,
+    create_incorporation_trend_chart
+)
 
 st.set_page_config(
     page_title="MCA Insight Pro",
@@ -12,21 +28,79 @@ st.set_page_config(
     layout="wide",
 )
 
-# Define all pages using st.navigation (most reliable method on Streamlit Cloud)
-pages = {
-    "Dashboard": [
-        st.Page("pages/1_Executive_Dashboard.py", title="Executive Dashboard", icon="📊"),
-        st.Page("pages/2_Company_Explorer.py", title="Company Explorer", icon="🔍"),
-        st.Page("pages/3_State_Intelligence.py", title="State Intelligence", icon="🗺️"),
-        st.Page("pages/4_Industry_Intelligence.py", title="Industry Intelligence", icon="🏭"),
-        st.Page("pages/5_Capital_Intelligence.py", title="Capital Intelligence", icon="💰"),
-        st.Page("pages/6_Company_Comparison.py", title="Company Comparison", icon="⚖️"),
-        st.Page("pages/7_AI_Insights.py", title="AI Insights", icon="🤖"),
-        st.Page("pages/8_Data_Quality.py", title="Data Quality", icon="✅"),
-        st.Page("pages/9_Reports_Export.py", title="Reports & Export", icon="📄"),
-        st.Page("pages/10_Watchlist.py", title="Watchlist", icon="⭐"),
-    ]
-}
+# Sidebar Navigation
+st.sidebar.title("📊 MCA Insight Pro")
+page = st.sidebar.radio(
+    "Navigate",
+    ["Executive Dashboard", "Company Explorer", "State Intelligence", "Industry Intelligence",
+     "Capital Intelligence", "Company Comparison", "AI Insights", "Data Quality",
+     "Reports & Export", "Watchlist"]
+)
 
-pg = st.navigation(pages)
-pg.run()
+# Load data once
+df = load_mca_data()
+if df.empty:
+    st.stop()
+
+df = preprocess_data(df)
+summary = get_data_summary(df)
+
+# ==================== EXECUTIVE DASHBOARD ====================
+if page == "Executive Dashboard":
+    render_header(
+        "MCA Insight Pro",
+        "India's Corporate Intelligence & Business Analytics Platform",
+        "📊"
+    )
+    
+    # KPI Cards
+    st.subheader("Key Performance Indicators")
+    metrics = [
+        {'label': 'Total Companies', 'value': f"{summary.get('total_companies', 0):,}", 'icon': '🏢', 'color': '#667eea'},
+        {'label': 'Active Companies', 'value': f"{summary.get('active_companies', 0):,}", 'icon': '✅', 'color': '#22c55e'},
+        {'label': 'Total States', 'value': f"{summary.get('total_states', 0)}", 'icon': '🗺️', 'color': '#f59e0b'},
+        {'label': 'Total Industries', 'value': f"{summary.get('total_industries', 0)}", 'icon': '🏭', 'color': '#764ba2'},
+    ]
+    render_metric_row(metrics)
+    
+    # Capital Metrics
+    st.subheader("Capital Metrics")
+    capital_metrics = [
+        {'label': 'Total Authorized Capital', 'value': format_number(summary.get('total_authorized_capital', 0), 2), 'icon': '💰', 'color': '#667eea'},
+        {'label': 'Average Authorized Capital', 'value': format_number(summary.get('avg_authorized_capital', 0), 2), 'icon': '📈', 'color': '#764ba2'},
+        {'label': 'Total Paid-Up Capital', 'value': format_number(summary.get('total_paid_up_capital', 0), 2), 'icon': '💵', 'color': '#22c55e'},
+    ]
+    render_metric_row(capital_metrics)
+    
+    # Status
+    st.subheader("Company Status Breakdown")
+    col1, col2 = st.columns(2)
+    with col1:
+        render_kpi_card("Active", f"{summary.get('active_companies', 0):,}", "✅", "#22c55e",
+                        f"{(summary.get('active_companies', 0) / max(summary.get('total_companies', 1), 1) * 100):.1f}%")
+    with col2:
+        render_kpi_card("Inactive", f"{summary.get('inactive_companies', 0):,}", "❌", "#ef4444",
+                        f"{(summary.get('inactive_companies', 0) / max(summary.get('total_companies', 1), 1) * 100):.1f}%")
+    
+    # Charts
+    col1, col2 = st.columns(2)
+    with col1:
+        st.plotly_chart(create_status_distribution_chart(df), use_container_width=True)
+    with col2:
+        st.plotly_chart(create_incorporation_trend_chart(df), use_container_width=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.plotly_chart(create_state_distribution_chart(df), use_container_width=True)
+    with col2:
+        st.plotly_chart(create_industry_distribution_chart(df), use_container_width=True)
+    
+    # Insights
+    st.subheader("Key Insights")
+    insights = generate_dataset_insights(df)
+    for insight in insights[:6]:
+        st.info(insight)
+
+else:
+    st.info(f"🚧 The page **{page}** is under migration to the new structure. Please check back soon.")
+    st.write("For now, only **Executive Dashboard** is fully available in this single-file version.")
