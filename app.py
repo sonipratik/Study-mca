@@ -1,12 +1,27 @@
 """MCA Insight Pro - Main Application"""
-import streamlit as st
 import sys
 from pathlib import Path
 
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).parent))
+# One-time path fix for reliable imports
+project_root = Path(__file__).resolve().parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
-from utils.data_loader import load_mca_data, preprocess_data
+import streamlit as st
+
+# Import render functions
+from pages._1_dashboard import render_home
+from pages._2_explorer import render_company_explorer
+from pages._3_state import render_state_intelligence
+from pages._4_industry import render_industry_intelligence
+from pages._5_capital import render_capital_intelligence
+from pages._6_comparison import render_company_comparison
+from pages._7_ai import render_ai_insights
+from pages._8_quality import render_data_quality
+from pages._9_reports import render_reports_export
+from pages._10_watchlist import render_watchlist
+
+from utils.data_loader import load_mca_data
 
 st.set_page_config(
     page_title="MCA Insight Pro",
@@ -17,6 +32,7 @@ st.set_page_config(
 
 # Sidebar Navigation
 st.sidebar.title("📊 MCA Insight Pro")
+st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
     "Navigate",
@@ -39,45 +55,33 @@ df = load_mca_data()
 if df.empty:
     st.stop()
 
-df = preprocess_data(df)
-
-# Page routing
+# Page Routing
 if page == "Executive Dashboard":
-    from pages._1_dashboard import render_home
-    render_home(df)
+    render_home()
 
 elif page == "Company Explorer":
-    from pages._2_explorer import render_company_explorer
-    render_company_explorer(df)
+    render_company_explorer()
 
 elif page == "State Intelligence":
-    from pages._3_state import render_state_intelligence
-    render_state_intelligence(df)
+    render_state_intelligence()
 
 elif page == "Industry Intelligence":
-    from pages._4_industry import render_industry_intelligence
-    render_industry_intelligence(df)
+    render_industry_intelligence()
 
 elif page == "Capital Intelligence":
-    from pages._5_capital import render_capital_intelligence
-    render_capital_intelligence(df)
+    render_capital_intelligence()
 
 elif page == "Company Comparison":
-    from pages._6_comparison import render_company_comparison
-    render_company_comparison(df)
+    render_company_comparison()
 
 elif page == "AI Insights":
-    from pages._7_ai import render_ai_insights
-    render_ai_insights(df)
+    render_ai_insights()
 
 elif page == "Data Quality":
-    from pages._8_quality import render_data_quality
-    render_data_quality(df)
+    render_data_quality()
 
 elif page == "Reports & Export":
-    from pages._9_reports import render_reports_export
-    render_reports_export(df)
+    render_reports_export()
 
 elif page == "Watchlist":
-    from pages._10_watchlist import render_watchlist
-    render_watchlist(df)
+    render_watchlist()
