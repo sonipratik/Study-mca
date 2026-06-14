@@ -1,161 +1,95 @@
-"""Main Streamlit application - MCA Insight Pro."""
+"""MCA Insight Pro - Complete Single File Version"""
 import streamlit as st
+import pandas as pd
 import sys
-import logging
 from pathlib import Path
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+sys.path.insert(0, str(Path(__file__).parent))
 
-# Set page configuration
-st.set_page_config(
-    page_title="MCA Insight Pro - Corporate Intelligence Dashboard",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded",
+from utils.data_loader import load_mca_data, get_data_summary, preprocess_data
+from utils.insights import generate_dataset_insights
+from components.ui_components import render_header, render_kpi_card, format_number, render_metric_row
+from components.charts import (
+    create_state_distribution_chart,
+    create_industry_distribution_chart,
+    create_status_distribution_chart,
+    create_incorporation_trend_chart
 )
 
-# Add custom CSS
-st.markdown("""
-    <style>
-    [data-testid="stMetric"] {
-        background-color: #f0f2f6;
-        padding: 10px;
-        border-radius: 5px;
-    }
-    
-    .main {
-        padding: 0px;
-    }
-    
-    h1 {
-        color: #667eea;
-    }
-    
-    h2 {
-        color: #764ba2;
-    }
-    </style>
-""", unsafe_allow_html=True)
+st.set_page_config(
+    page_title="MCA Insight Pro",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# Sidebar branding
-with st.sidebar:
-    st.markdown("""
-        <div style='text-align: center; padding: 20px 0;'>
-            <h1 style='color: #667eea; margin: 0;'>📊</h1>
-            <h3 style='color: #667eea; margin: 5px 0;'>MCA Insight Pro</h3>
-            <p style='color: #999; font-size: 12px;'>Corporate Intelligence Platform</p>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    st.divider()
-    
-    st.markdown("""
-    ### About This Dashboard
-    
-    **MCA Insight Pro** is India's leading corporate intelligence platform, 
-    powered by the latest MCA Master Data (Updated: June 30, 2025).
-    
-    #### Platform Features:
-    - 📊 Executive Intelligence Dashboard
-    - 🔍 Advanced Company Search
-    - 🗺️ State & Regional Analysis
-    - 🏭 Industry Deep Dives
-    - 💰 Capital Intelligence
-    - ⚖️ Company Comparisons
-    - 🤖 AI-Powered Insights
-    - ✅ Data Quality Monitoring
-    - 📄 Report Generation
-    - ⭐ Watchlist Management
-    
-    #### Target Audience:
-    - Business Analysts
-    - Investors & VCs
-    - Corporate Consultants
-    - Researchers & Students
-    - Government Officials
-    - Startup Founders
-    
-    #### Data Source:
-    MCA Master Data - Ministry of Corporate Affairs, India
-    """)
-    
-    st.divider()
-    
-    # Help section
-    if st.checkbox("📚 Show Help & Tips"):
-        st.markdown("""
-        ### Tips for Using MCA Insight Pro:
-        
-        1. **Search**: Use the Company Explorer to search by name, CIN, or registration number
-        2. **Filter**: Apply filters in any page to narrow down results
-        3. **Compare**: Compare up to 5 companies side-by-side
-        4. **Export**: Download data in CSV or Excel format
-        5. **Insights**: View AI-generated insights for quick analysis
-        6. **Quality**: Check Data Quality Center for data completeness
-        7. **Watchlist**: Bookmark companies for future reference
-        
-        ### Keyboard Shortcuts:
-        - `Ctrl+K`: Search
-        - `Ctrl+Shift+E`: Export
-        """)
+# ==================== SIDEBAR ====================
+st.sidebar.title("📊 MCA Insight Pro")
+page = st.sidebar.radio(
+    "Navigate",
+    ["Executive Dashboard", "Company Explorer", "State Intelligence", 
+     "Industry Intelligence", "Capital Intelligence", "AI Insights"]
+)
 
-# Page content
-st.markdown("""
-    <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                padding: 30px; border-radius: 10px; margin-bottom: 20px; color: white;'>
-        <h1 style='color: white; margin: 0;'>📊 MCA Corporate Intelligence Dashboard</h1>
-        <p style='color: rgba(255,255,255,0.9); margin: 10px 0 0 0;'>
-            Analyze India's Corporate Landscape with Advanced Business Intelligence
-        </p>
-    </div>
-""", unsafe_allow_html=True)
+# Load data once
+df = load_mca_data()
+if df.empty:
+    st.stop()
 
-# Main content area info
-st.markdown("""
-### Welcome to MCA Insight Pro
+df = preprocess_data(df)
+summary = get_data_summary(df)
 
-Select a page from the sidebar to explore:
+# ==================== EXECUTIVE DASHBOARD ====================
+if page == "Executive Dashboard":
+    render_header("MCA Insight Pro", "India's Corporate Intelligence Platform", "📊")
 
-- **Executive Dashboard**: Overview of key metrics and trends
-- **Company Explorer**: Search and analyze individual companies
-- **State Intelligence**: Regional business analysis
-- **Industry Intelligence**: Sector-wise insights
-- **Capital Intelligence**: Capital distribution and wealth analysis
-- **Company Comparison**: Compare multiple companies
-- **AI Insights**: Automated executive analysis
-- **Data Quality**: Data completeness and validation
-- **Reports & Export**: Generate and download reports
-- **Watchlist**: Track your favorite companies
+    # KPIs
+    st.subheader("Key Performance Indicators")
+    metrics = [
+        {'label': 'Total Companies', 'value': f"{summary.get('total_companies', 0):,}", 'icon': '🏢', 'color': '#667eea'},
+        {'label': 'Active Companies', 'value': f"{summary.get('active_companies', 0):,}", 'icon': '✅', 'color': '#22c55e'},
+        {'label': 'Total States', 'value': f"{summary.get('total_states', 0)}", 'icon': '🗺️', 'color': '#f59e0b'},
+        {'label': 'Total Industries', 'value': f"{summary.get('total_industries', 0)}", 'icon': '🏭', 'color': '#764ba2'},
+    ]
+    render_metric_row(metrics)
 
-### Get Started
+    # Capital
+    st.subheader("Capital Metrics")
+    capital_metrics = [
+        {'label': 'Total Authorized Capital', 'value': format_number(summary.get('total_authorized_capital', 0), 2), 'icon': '💰', 'color': '#667eea'},
+        {'label': 'Average Authorized Capital', 'value': format_number(summary.get('avg_authorized_capital', 0), 2), 'icon': '📈', 'color': '#764ba2'},
+        {'label': 'Total Paid-Up Capital', 'value': format_number(summary.get('total_paid_up_capital', 0), 2), 'icon': '💵', 'color': '#22c55e'},
+    ]
+    render_metric_row(capital_metrics)
 
-1. Go to **Executive Dashboard** for a quick overview
-2. Use **Company Explorer** to search for specific companies
-3. Visit **State Intelligence** and **Industry Intelligence** for regional/sector analysis
-4. Check **AI Insights** for automated analysis
-5. Use **Reports & Export** to download data
+    # Status
+    st.subheader("Company Status Breakdown")
+    col1, col2 = st.columns(2)
+    with col1:
+        render_kpi_card("Active", f"{summary.get('active_companies', 0):,}", "✅", "#22c55e",
+                        f"{(summary.get('active_companies', 0) / max(summary.get('total_companies', 1), 1) * 100):.1f}%")
+    with col2:
+        render_kpi_card("Inactive", f"{summary.get('inactive_companies', 0):,}", "❌", "#ef4444",
+                        f"{(summary.get('inactive_companies', 0) / max(summary.get('total_companies', 1), 1) * 100):.1f}%")
 
-### Platform Capabilities
+    # Charts
+    col1, col2 = st.columns(2)
+    with col1:
+        st.plotly_chart(create_status_distribution_chart(df), use_container_width=True)
+    with col2:
+        st.plotly_chart(create_incorporation_trend_chart(df), use_container_width=True)
 
-- 🔍 **Smart Search**: Find companies by name, CIN, registration number
-- 📊 **Rich Analytics**: 50+ visualizations and charts
-- 💾 **Data Export**: CSV, Excel, PDF formats
-- 🎯 **Advanced Filters**: State, industry, capital, status, and more
-- 📈 **Trend Analysis**: Incorporation trends, growth metrics
-- 🏆 **Leaderboards**: Top companies by various metrics
-- 🎨 **Professional Design**: Enterprise-grade UI/UX
-""")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.plotly_chart(create_state_distribution_chart(df), use_container_width=True)
+    with col2:
+        st.plotly_chart(create_industry_distribution_chart(df), use_container_width=True)
 
-# Footer
-st.divider()
-st.markdown("""
-    <div style='text-align: center; color: #999; font-size: 12px; padding: 20px;'>
-        <p>MCA Insight Pro v1.0 | Data Updated: June 30, 2025</p>
-        <p>Powered by Streamlit, Plotly, and Python</p>
-        <p>© 2025 Corporate Intelligence Platform | All Rights Reserved</p>
-    </div>
-""", unsafe_allow_html=True)
+    # Insights
+    st.subheader("Key Insights")
+    for insight in generate_dataset_insights(df)[:6]:
+        st.info(insight)
 
-logger.info("MCA Insight Pro dashboard loaded successfully")
+else:
+    st.info(f"🚧 **{page}** page is coming soon in this single-file version.")
+    st.write("Currently only **Executive Dashboard** is fully migrated.")
