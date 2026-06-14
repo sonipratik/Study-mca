@@ -14,7 +14,7 @@ CSV_FILE = BASE_DIR / "company_master_data_2025_06_30.csv"
 
 
 def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Normalize column names for consistency."""
+    """Normalize column names."""
     df = df.copy()
     df.columns = (
         df.columns.str.strip()
@@ -29,9 +29,9 @@ def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
 def load_mca_data() -> pd.DataFrame:
     """
     Load MCA Master Data.
-    Priority: DuckDB → CSV fallback
+    Tries DuckDB first. Falls back to CSV if DuckDB fails.
     """
-    # Try DuckDB first
+    # Try DuckDB
     if DUCKDB_FILE.exists():
         try:
             con = duckdb.connect(str(DUCKDB_FILE), read_only=True)
@@ -44,9 +44,9 @@ def load_mca_data() -> pd.DataFrame:
 
     # Fallback to CSV
     if CSV_FILE.exists():
-        logger.info("Loading from CSV file...")
+        logger.info("Loading from CSV...")
         df = pd.read_csv(CSV_FILE, low_memory=False)
         return normalize_columns(df)
 
-    st.error("❌ No data file found. Please place either the .duckdb or .csv file in the project root.")
+    st.error("❌ Data file not found. Please add company_master_data_2025_06_30.csv or .duckdb")
     return pd.DataFrame()
