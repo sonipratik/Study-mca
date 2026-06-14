@@ -1,14 +1,16 @@
 """Home page - Executive Dashboard."""
 import sys
+import os
 from pathlib import Path
 
 # =============================================
-# CRITICAL FIX: Add project root to Python path
-# This solves ImportError on Streamlit Cloud
+# STRONG FIX for Streamlit Cloud ImportError
 # =============================================
-ROOT = Path(__file__).resolve().parent.parent
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+current_file = Path(__file__).resolve()
+project_root = current_file.parent.parent
+
+sys.path.insert(0, str(project_root))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import streamlit as st
 import pandas as pd
