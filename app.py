@@ -1,10 +1,17 @@
-"""MCA Insight Pro - Complete Single File Version"""
+"""MCA Insight Pro - Single File Version (Fixed Path)"""
 import streamlit as st
 import pandas as pd
 import sys
+import os
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent))
+# =============================================
+# STRONG PATH FIX FOR STREAMLIT CLOUD
+# =============================================
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, current_dir)
+sys.path.insert(0, parent_dir)
 
 from utils.data_loader import load_mca_data, get_data_summary, preprocess_data
 from utils.insights import generate_dataset_insights
@@ -23,15 +30,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ==================== SIDEBAR ====================
+# Sidebar
 st.sidebar.title("📊 MCA Insight Pro")
-page = st.sidebar.radio(
-    "Navigate",
-    ["Executive Dashboard", "Company Explorer", "State Intelligence", 
-     "Industry Intelligence", "Capital Intelligence", "AI Insights"]
-)
+page = st.sidebar.radio("Navigate", ["Executive Dashboard"])
 
-# Load data once
+# Load data
 df = load_mca_data()
 if df.empty:
     st.stop()
@@ -39,7 +42,6 @@ if df.empty:
 df = preprocess_data(df)
 summary = get_data_summary(df)
 
-# ==================== EXECUTIVE DASHBOARD ====================
 if page == "Executive Dashboard":
     render_header("MCA Insight Pro", "India's Corporate Intelligence Platform", "📊")
 
@@ -89,7 +91,3 @@ if page == "Executive Dashboard":
     st.subheader("Key Insights")
     for insight in generate_dataset_insights(df)[:6]:
         st.info(insight)
-
-else:
-    st.info(f"🚧 **{page}** page is coming soon in this single-file version.")
-    st.write("Currently only **Executive Dashboard** is fully migrated.")
