@@ -1,10 +1,14 @@
-"""Home page - Executive Dashboard."""
-import streamlit as st
-import pandas as pd
+"""Page Module"""
 import sys
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).parent.parent))
+# === Robust path fix for Streamlit Cloud ===
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+import streamlit as st
+import pandas as pd
 
 from utils.data_loader import load_mca_data, get_data_summary, preprocess_data
 from utils.insights import generate_dataset_insights
