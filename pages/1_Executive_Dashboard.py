@@ -3,14 +3,24 @@ import sys
 import os
 from pathlib import Path
 
-# =============================================
-# STRONG FIX for Streamlit Cloud ImportError
-# =============================================
-current_file = Path(__file__).resolve()
-project_root = current_file.parent.parent
-
-sys.path.insert(0, str(project_root))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# =====================================================
+# MAXIMUM COMPATIBILITY PATH FIX FOR STREAMLIT CLOUD
+# =====================================================
+try:
+    # Method 1: Using pathlib (recommended)
+    current_file = Path(__file__).resolve()
+    project_root = current_file.parent.parent
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+    
+    # Method 2: Using os (backup)
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.dirname(current_dir)
+    if parent_dir not in sys.path:
+        sys.path.insert(0, parent_dir)
+        
+except Exception as e:
+    print(f"Path fix warning: {e}")
 
 import streamlit as st
 import pandas as pd
